@@ -12,6 +12,10 @@
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <!-- Test names separate the member and the case with underscores (Decode_ReadsEveryFormat) -->
         <NoWarn>$(NoWarn);CS1591</NoWarn>
+        <!-- The allocation tests read GC.GetAllocatedBytesForCurrentThread. A background GC can retire a
+             thread's allocation buffer and count what was left of it as allocated, so a test that
+             allocated nothing fails with up to 8 KB; blocking GCs count correctly -->
+        <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
     </PropertyGroup>
 
     <ItemGroup>
