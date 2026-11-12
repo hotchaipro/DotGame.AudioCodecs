@@ -70,12 +70,23 @@ jobs:
       - name: Install flac and ffmpeg
         if: matrix.paths == 'vectors'
         run: sudo apt-get update -q && sudo apt-get install -y -q flac ffmpeg
+      # The downloads, kept between runs (both are checked by their SHA-256 when used)
+      - uses: actions/cache@v4
+        with:
+          path: |
+            eng/reference/.native/opus-1.6.1.tar.gz
+            vectors.tar.gz
+          key: opus-1.6.1-rfc8251-downloads
       - name: Build libopus
         run: eng/reference/build-libopus.sh
       - name: Get the RFC 8251 test vectors
         run: |
-          curl -fsSL -o vectors.tar.gz https://opus-codec.org/static/testvectors/opus_testvectors-rfc8251.tar.gz
-          echo "6b26a22f9ba87b2b836906a9bb7afec5f8e54d49553b1200382520ee6fedfa55  vectors.tar.gz" | shasum -a 256 -c -
+          sha=6b26a22f9ba87b2b836906a9bb7afec5f8e54d49553b1200382520ee6fedfa55
+          if ! echo "$sha  vectors.tar.gz" | shasum -a 256 -c - > /dev/null 2>&1; then
+            curl -fsSL --retry 5 --retry-all-errors --retry-delay 5 -o vectors.tar.gz \
+              https://opus-codec.org/static/testvectors/opus_testvectors-rfc8251.tar.gz
+          fi
+          echo "$sha  vectors.tar.gz" | shasum -a 256 -c -
           tar -xzf vectors.tar.gz
       - name: Check
         run: >

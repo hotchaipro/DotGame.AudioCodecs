@@ -11,7 +11,7 @@ sha=6ffcb593207be92584df15b32466ed64bbec99109f007c82205f0194572411a1
 mkdir -p "$out"
 cd "$out"
 if [ ! -f opus-1.6.1.tar.gz ] || ! echo "$sha  opus-1.6.1.tar.gz" | shasum -a 256 -c - > /dev/null 2>&1; then
-  curl -fsSL -o opus-1.6.1.tar.gz "$url"
+  curl -fsSL --retry 5 --retry-all-errors --retry-delay 5 -o opus-1.6.1.tar.gz "$url"
   echo "$sha  opus-1.6.1.tar.gz" | shasum -a 256 -c -
 fi
 rm -rf src && mkdir src && tar -xzf opus-1.6.1.tar.gz -C src --strip-components=1

@@ -60,8 +60,17 @@ public sealed class OpusEncoderTests
     public void Encode_AllocatesNothing_OnceMade()
     {
         float[] pcm = OpusTestSignal.Make("music", 2, 1);
-        var encoder = new OpusEncoderState(48000, 2, OpusEncoderState.OPUS_APPLICATION_AUDIO);
         var packet = new byte[MaxPacket];
+
+        // The whole signal once first, so every path's one-time setup (static tables the first frame
+        // doesn't reach, which another test may or may not have touched already) is done
+        var warm = new OpusEncoderState(48000, 2, OpusEncoderState.OPUS_APPLICATION_AUDIO);
+        for (int at = 0; at + 1920 <= pcm.Length; at += 1920)
+        {
+            warm.Encode(pcm.AsSpan(at, 1920), 960, packet);
+        }
+
+        var encoder = new OpusEncoderState(48000, 2, OpusEncoderState.OPUS_APPLICATION_AUDIO);
         encoder.Encode(pcm.AsSpan(0, 1920), 960, packet);
 
         long before = GC.GetAllocatedBytesForCurrentThread();
