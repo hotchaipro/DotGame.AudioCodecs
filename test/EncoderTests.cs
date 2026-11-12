@@ -172,9 +172,7 @@ public sealed class EncoderTests
         using var encoder = new FlacEncoder(new MemoryStream(new byte[1 << 22]), 48000, channels, new FlacEncoderOptions { CompressionLevel = level });
         encoder.Write(signal.AsSpan(0, 4096 * 2 * channels));
 
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        encoder.Write(signal.AsSpan(4096 * 2 * channels));
-        Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
+        Allocations.AssertNone(() => encoder.Write(signal.AsSpan(4096 * 2 * channels)));
     }
 
     [Fact]

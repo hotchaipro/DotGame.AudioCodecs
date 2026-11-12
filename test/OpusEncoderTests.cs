@@ -73,12 +73,12 @@ public sealed class OpusEncoderTests
         var encoder = new OpusEncoderState(48000, 2, OpusEncoderState.OPUS_APPLICATION_AUDIO);
         encoder.Encode(pcm.AsSpan(0, 1920), 960, packet);
 
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        for (int at = 1920; at + 1920 <= pcm.Length; at += 1920)
+        Allocations.AssertNone(() =>
         {
-            encoder.Encode(pcm.AsSpan(at, 1920), 960, packet);
-        }
-
-        Assert.Equal(before, GC.GetAllocatedBytesForCurrentThread());
+            for (int at = 1920; at + 1920 <= pcm.Length; at += 1920)
+            {
+                encoder.Encode(pcm.AsSpan(at, 1920), 960, packet);
+            }
+        });
     }
 }

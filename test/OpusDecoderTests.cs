@@ -171,16 +171,17 @@ public sealed class OpusDecoderTests
         decoder.Read(chunk);
         decoder.Read(floats);
 
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        for (int i = 0; i < 20; i++)
+        Allocations.AssertNone(() =>
         {
+            decoder.Seek(0);
+            for (int i = 0; i < 20; i++)
+            {
+                decoder.Read(chunk);
+                decoder.Read(floats);
+            }
+            decoder.Seek(1000);
             decoder.Read(chunk);
-            decoder.Read(floats);
-        }
-        decoder.Seek(1000);
-        decoder.Read(chunk);
-
-        Assert.Equal(before, GC.GetAllocatedBytesForCurrentThread());
+        });
     }
 
     [Fact]
@@ -260,13 +261,14 @@ public sealed class OpusDecoderTests
         short[] whole = Whole(file);
         Assert.Equal(whole, all.GetRange(preSkip * channels, whole.Length));
 
-        decoder.Reset();
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        foreach (byte[] packet in packets)
+        Allocations.AssertNone(() =>
         {
-            decoder.Decode(packet, pcm);
-        }
-        Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
+            decoder.Reset();
+            foreach (byte[] packet in packets)
+            {
+                decoder.Decode(packet, pcm);
+            }
+        });
     }
 
     [Fact]

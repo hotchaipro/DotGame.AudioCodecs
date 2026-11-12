@@ -46,6 +46,32 @@ internal sealed class UnseekableStream(byte[] data) : Stream
     public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 }
 
+/// <summary>Checks that code allocates nothing once it's warm.</summary>
+internal static class Allocations
+{
+    /// <summary>
+    /// Fails unless one of three runs of <paramref name="work"/> allocates nothing on this thread. A
+    /// per-call allocation shows in every run; one run is allowed a few stray bytes, which busy CI
+    /// machines now and then count against a test's thread for work that isn't the test's.
+    /// </summary>
+    public static void AssertNone(Action work)
+    {
+        long least = long.MaxValue;
+        for (int run = 0; run < 3; run++)
+        {
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            work();
+            long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+            if (allocated == 0)
+            {
+                return;
+            }
+            least = Math.Min(least, allocated);
+        }
+        Assert.Fail($"Every run allocated: {least} bytes at least.");
+    }
+}
+
 /// <summary>Ogg pages for tests: packets read without the library, and CRCs made right after an edit.</summary>
 internal static class Ogg
 {
