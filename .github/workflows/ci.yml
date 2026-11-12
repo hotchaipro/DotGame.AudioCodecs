@@ -1,0 +1,103 @@
+name: CI
+
+# Builds and tests on Windows, Linux and macOS, on x64 and Arm64: the codecs have SIMD code for each CPU,
+# and every machine must give the same samples and the same encoded bytes. Then the checks against
+# native libopus, flac and ffmpeg (eng/reference), and the docs.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, windows-11-arm, ubuntu-latest, ubuntu-24.04-arm, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '11.0.x'
+      - run: dotnet build -c Release
+      - run: dotnet test -c Release --no-build
+
+  # The other SIMD paths, on both CPUs: the portable forms WebAssembly runs, and none at all
+  simd:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm]
+        paths: [portable, scalar]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '11.0.x'
+      - name: Build
+        run: dotnet build -c Release ${{ matrix.paths == 'portable' && '-p:PortableVectors=true' || '' }}
+      - name: Test
+        run: dotnet test -c Release --no-build
+        env:
+          DOTNET_EnableHWIntrinsic: ${{ matrix.paths == 'scalar' && '0' || '1' }}
+
+  # The Opus port against native libopus 1.6.1, packet for packet and sample for sample, with the RFC 8251
+  # test vectors, on each SIMD path of both CPUs; and, once, the FLAC, WAV and Ogg Opus files against
+  # flac and ffmpeg
+  reference:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm]
+        paths: [vectors, portable, scalar]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '11.0.x'
+      - name: Install flac and ffmpeg
+        if: matrix.paths == 'vectors'
+        run: sudo apt-get update -q && sudo apt-get install -y -q flac ffmpeg
+      - name: Build libopus
+        run: eng/reference/build-libopus.sh
+      - name: Get the RFC 8251 test vectors
+        run: |
+          curl -fsSL -o vectors.tar.gz https://opus-codec.org/static/testvectors/opus_testvectors-rfc8251.tar.gz
+          echo "6b26a22f9ba87b2b836906a9bb7afec5f8e54d49553b1200382520ee6fedfa55  vectors.tar.gz" | shasum -a 256 -c -
+          tar -xzf vectors.tar.gz
+      - name: Check
+        run: >
+          dotnet run -c Release --project eng/reference/Check
+          ${{ matrix.paths == 'portable' && '-p:PortableVectors=true' || '' }}
+          -- --vectors opus_newvectors ${{ matrix.paths == 'vectors' && '--tools' || '' }}
+        env:
+          DOTNET_EnableHWIntrinsic: ${{ matrix.paths == 'scalar' && '0' || '1' }}
+
+  # The API reference is up to date with the doc comments, the docs' links resolve, and the samples in
+  # the README and the guide compile
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '11.0.x'
+      - name: Check the API reference
+        run: dotnet run tools/api-docs/generate.cs -- --check
+      - name: Check the links and samples
+        run: python tools/api-docs/check-docs.py
