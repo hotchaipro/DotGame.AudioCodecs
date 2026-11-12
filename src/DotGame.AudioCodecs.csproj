@@ -1,0 +1,65 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net11.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>disable</ImplicitUsings>
+        <IsAotCompatible>true</IsAotCompatible>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+        <AnalysisLevel>latest-recommended</AnalysisLevel>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <!-- -p:PortableVectors=true: the portable SIMD forms (what WebAssembly's Mono runs) on every machine, for the checks -->
+        <DefineConstants Condition="'$(PortableVectors)' == 'true'">$(DefineConstants);OPUS_PORTABLE_VECTORS</DefineConstants>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <Version>0.1.0-preview.1</Version>
+        <Description>Opus, FLAC and WAV audio codecs for .NET, with no dependencies. Trim and AOT safe.</Description>
+        <Authors>Hot Chai Games LLC</Authors>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageTags>opus;flac;wav;ogg;audio;codec;decoder;encoder</PackageTags>
+        <RepositoryUrl>https://github.com/hotchaipro/DotGame.AudioCodecs</RepositoryUrl>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="..\LICENSE" Pack="true" PackagePath="" />
+        <None Include="..\README.md" Pack="true" PackagePath="" />
+        <None Include="..\THIRD-PARTY-NOTICES.md" Pack="true" PackagePath="" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="DotGame.AudioCodecs.Tests" />
+        <!-- The reference checks reach the Opus packet encoder and decoder -->
+        <InternalsVisibleTo Include="Check" />
+        <!-- The fuzzer runs the Opus packet decoder on raw packets -->
+        <InternalsVisibleTo Include="DotGame.AudioCodecs.Fuzz" />
+    </ItemGroup>
+
+    <!--
+        The public API baseline: PublicAPI.Shipped.txt lists what released packages have, and
+        PublicAPI.Unshipped.txt what's changed since. A public API that isn't in them, or is in them but
+        gone, fails the build (RS0016, RS0017), so every change to the API is a change to these files too.
+        At a release, move Unshipped's lines into Shipped.
+    -->
+    <ItemGroup>
+        <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="5.6.0" PrivateAssets="all" />
+        <AdditionalFiles Include="..\eng\api\DotGame.AudioCodecs\PublicAPI.Shipped.txt" Visible="false" />
+        <AdditionalFiles Include="..\eng\api\DotGame.AudioCodecs\PublicAPI.Unshipped.txt" Visible="false" />
+    </ItemGroup>
+
+    <!-- LibraryVersion.Value: the package version, for the encoders' vendor strings -->
+    <Target Name="WriteLibraryVersion" BeforeTargets="CoreCompile" Inputs="$(MSBuildProjectFile)" Outputs="$(IntermediateOutputPath)LibraryVersion.g.cs">
+        <WriteLinesToFile File="$(IntermediateOutputPath)LibraryVersion.g.cs" Overwrite="true" WriteOnlyWhenDifferent="true"
+            Lines="// Generated from the project's Version.;namespace DotGame.AudioCodecs%3B;internal static class LibraryVersion { public const string Value = &quot;$(Version)&quot;%3B }" />
+        <ItemGroup>
+            <Compile Include="$(IntermediateOutputPath)LibraryVersion.g.cs" />
+            <FileWrites Include="$(IntermediateOutputPath)LibraryVersion.g.cs" />
+        </ItemGroup>
+    </Target>
+
+</Project>

@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+        The checks against native libopus 1.6.1 (build-libopus.sh builds it and the shim): DotGame.AudioCodecs's
+        public API, packet for packet and sample for sample. Run with dotnet run -c Release; see README.md.
+    -->
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net11.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <TieredPGO>true</TieredPGO>
+        <InvariantGlobalization>true</InvariantGlobalization>
+    </PropertyGroup>
+
+    <!-- The portable SIMD forms (what WebAssembly's Mono runs) on every machine: dotnet run -p:PortableVectors=true -->
+    <PropertyGroup Condition="'$(PortableVectors)' == 'true'">
+        <DefineConstants>$(DefineConstants);OPUS_PORTABLE_VECTORS</DefineConstants>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\..\src\DotGame.AudioCodecs.csproj" AdditionalProperties="PortableVectors=$(PortableVectors)" />
+    </ItemGroup>
+
+</Project>

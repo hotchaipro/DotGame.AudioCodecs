@@ -1,0 +1,10 @@
+bin/
+obj/
+.vs/
+.vscode/
+.idea/
+*.user
+TestResults/
+.DS_Store
+
+eng/reference/.native/

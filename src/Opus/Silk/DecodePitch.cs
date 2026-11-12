@@ -1,0 +1,92 @@
+/***********************************************************************
+Copyright (c) 2006-2011, Skype Limited. All rights reserved.
+Ported to C# from libopus 1.6.1 (silk/decode_pitch.c) by Hot Chai Games LLC
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+- Redistributions of source code must retain the above copyright notice,
+this list of conditions and the following disclaimer.
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+- Neither the name of Internet Society, IETF or IETF Trust, nor the
+names of specific contributors, may be used to endorse or promote
+products derived from this software without specific prior written
+permission.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+***********************************************************************/
+
+using System;
+using System.Diagnostics;
+using static DotGame.AudioCodecs.Opus.Silk.PitchEstDefines;
+using static DotGame.AudioCodecs.Opus.Silk.PitchEstTables;
+using static DotGame.AudioCodecs.Opus.Silk.SigProcFix;
+
+namespace DotGame.AudioCodecs.Opus.Silk;
+
+/***********************************************************
+* Pitch analyser function
+********************************************************** */
+internal static class DecodePitch
+{
+    internal static void silk_decode_pitch(
+        short lagIndex,                 /* I                                                                */
+        sbyte contourIndex,             /* O                                                                */
+        Span<int> pitch_lags,           /* O    4 pitch values                                              */
+        int Fs_kHz,                     /* I    sampling frequency (kHz)                                    */
+        int nb_subfr)                   /* I    number of sub frames                                        */
+    {
+        int lag, k, min_lag, max_lag, cbk_size;
+        ReadOnlySpan<sbyte> Lag_CB_ptr;
+
+        if (Fs_kHz == 8)
+        {
+            if (nb_subfr == PE_MAX_NB_SUBFR)
+            {
+                Lag_CB_ptr = silk_CB_lags_stage2;
+                cbk_size = PE_NB_CBKS_STAGE2_EXT;
+            }
+            else
+            {
+                Debug.Assert(nb_subfr == PE_MAX_NB_SUBFR >> 1);
+                Lag_CB_ptr = silk_CB_lags_stage2_10_ms;
+                cbk_size = PE_NB_CBKS_STAGE2_10MS;
+            }
+        }
+        else
+        {
+            if (nb_subfr == PE_MAX_NB_SUBFR)
+            {
+                Lag_CB_ptr = silk_CB_lags_stage3;
+                cbk_size = PE_NB_CBKS_STAGE3_MAX;
+            }
+            else
+            {
+                Debug.Assert(nb_subfr == PE_MAX_NB_SUBFR >> 1);
+                Lag_CB_ptr = silk_CB_lags_stage3_10_ms;
+                cbk_size = PE_NB_CBKS_STAGE3_10MS;
+            }
+        }
+
+        min_lag = silk_SMULBB(PE_MIN_LAG_MS, Fs_kHz);
+        max_lag = silk_SMULBB(PE_MAX_LAG_MS, Fs_kHz);
+        lag = min_lag + lagIndex;
+
+        for (k = 0; k < nb_subfr; k++)
+        {
+            /* C: matrix_ptr( Lag_CB_ptr, k, contourIndex, cbk_size ) */
+            pitch_lags[k] = lag + Lag_CB_ptr[(k * cbk_size) + contourIndex];
+            pitch_lags[k] = silk_LIMIT(pitch_lags[k], min_lag, max_lag);
+        }
+    }
+}

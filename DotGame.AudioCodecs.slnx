@@ -1,0 +1,4 @@
+<Solution>
+    <Project Path="src/DotGame.AudioCodecs.csproj" />
+    <Project Path="test/DotGame.AudioCodecs.Tests.csproj" />
+</Solution>
