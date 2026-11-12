@@ -15,7 +15,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
-        <Version>0.1.0-preview.1</Version>
+        <Version>0.1.0-preview.2</Version>
         <Description>Opus, FLAC and WAV audio codecs for .NET, with no dependencies. Trim and AOT safe.</Description>
         <Authors>Hot Chai Games LLC</Authors>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
