@@ -16,6 +16,10 @@ dotnet build
 dotnet test
 ```
 
+Nothing else is needed to build, test or check the docs. Python is needed only to regenerate the
+tests' fixtures (`test/FixtureSources/make-audio.sh`, which also needs numpy, ffmpeg and flac), which
+are checked in.
+
 The build treats every warning as an error, including the code style in `.editorconfig`, so a change
 that builds cleanly already follows it. `dotnet format` fixes most style errors.
 
@@ -34,9 +38,10 @@ A few things the library holds to:
   and member has one: after changing a public API or its comments, run
   `dotnet run tools/api-docs/generate.cs` (`-- --check` fails if `docs/api` is out of date, and
   `-- --missing` lists members with no comment). After changing `README.md` or `docs/`,
-  `python3 tools/api-docs/check-docs.py` checks their links and compiles the samples in the README and the guide. The
-  other DotGame repositories' API references use copies of this `generate.cs`, each with its own
-  `tools/api-docs/packages.json`.
+  `dotnet run tools/api-docs/check-docs.cs` checks their links and compiles the samples in the README
+  and the guide. Both are DotGame.Imaging's, copied, with this repository's settings in
+  `tools/api-docs/packages.json` and `check-docs.json`: a change to either is made in DotGame.Imaging
+  and copied here (CI fails while they differ).
 - **The decoders take untrusted files.** A change to one is fuzzed with `fuzz/` (see its README)
   before it ships.
 
