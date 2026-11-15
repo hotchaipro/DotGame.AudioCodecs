@@ -39,9 +39,9 @@ A few things the library holds to:
   `dotnet run tools/api-docs/generate.cs` (`-- --check` fails if `docs/api` is out of date, and
   `-- --missing` lists members with no comment). After changing `README.md` or `docs/`,
   `dotnet run tools/api-docs/check-docs.cs` checks their links and compiles the samples in the README
-  and the guide. Both are DotGame.Imaging's, copied, with this repository's settings in
-  `tools/api-docs/packages.json` and `check-docs.json`: a change to either is made in DotGame.Imaging
-  and copied here (CI fails while they differ).
+  and the guide. Both began as DotGame.Imaging's, with this repository's settings in
+  `tools/api-docs/packages.json` and `check-docs.json`. Each repository keeps its own copy, so an
+  improvement to one is worth copying to the others.
 - **The decoders take untrusted files.** A change to one is fuzzed with `fuzz/` (see its README)
   before it ships.
 

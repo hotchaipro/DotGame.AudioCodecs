@@ -102,17 +102,6 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v7
-      # The docs' tools are copies of DotGame.Imaging's
-      - name: Check out DotGame.Imaging
-        uses: actions/checkout@v7
-        with:
-          repository: hotchaipro/DotGame.Imaging
-          path: siblings/DotGame.Imaging
-      - name: Check the docs' tools are DotGame.Imaging's
-        run: |
-          for tool in generate.cs check-docs.cs; do
-            cmp tools/api-docs/$tool siblings/DotGame.Imaging/tools/api-docs/$tool || { echo "tools/api-docs/$tool isn't DotGame.Imaging's, the original: change it there and copy it here"; exit 1; }
-          done
       - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '11.0.x'
