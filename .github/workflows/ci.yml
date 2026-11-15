@@ -22,11 +22,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, windows-11-arm, ubuntu-latest, ubuntu-24.04-arm, macos-latest]
+        os: [windows-latest, windows-11-arm, ubuntu-26.04, ubuntu-26.04-arm, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-dotnet@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '11.0.x'
       - run: dotnet build -c Release
@@ -37,12 +37,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm]
+        os: [ubuntu-26.04, ubuntu-26.04-arm]
         paths: [portable, scalar]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-dotnet@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '11.0.x'
       - name: Build
@@ -59,19 +59,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm]
+        os: [ubuntu-26.04, ubuntu-26.04-arm]
         paths: [vectors, portable, scalar]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-dotnet@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '11.0.x'
       - name: Install flac and ffmpeg
         if: matrix.paths == 'vectors'
         run: sudo apt-get update -q && sudo apt-get install -y -q flac ffmpeg
       # The downloads, kept between runs (both are checked by their SHA-256 when used)
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: |
             eng/reference/.native/opus-1.6.1.tar.gz
@@ -99,12 +99,12 @@ jobs:
   # The API reference is up to date with the doc comments, the docs' links resolve, and the samples in
   # the README and the guide compile
   docs:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       # The docs' tools are copies of DotGame.Imaging's
       - name: Check out DotGame.Imaging
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           repository: hotchaipro/DotGame.Imaging
           path: siblings/DotGame.Imaging
@@ -113,7 +113,7 @@ jobs:
           for tool in generate.cs check-docs.cs; do
             cmp tools/api-docs/$tool siblings/DotGame.Imaging/tools/api-docs/$tool || { echo "tools/api-docs/$tool isn't DotGame.Imaging's, the original: change it there and copy it here"; exit 1; }
           done
-      - uses: actions/setup-dotnet@v5
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '11.0.x'
       - name: Check the API reference
